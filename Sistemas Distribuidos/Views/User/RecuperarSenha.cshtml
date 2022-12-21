@@ -1,0 +1,36 @@
+﻿@model RecSenhaModel
+@{
+    ViewData["Title"] = "Recuperar Senha";
+}
+
+<div class="text-center mt-5">
+    <h3>Recuperar Senha</h3>
+
+    <br/>
+
+    <!-- Caso de certo, mostra a mensagem vinda do servidor -->
+
+    @if (TempData["ok"] != null)
+    {
+        <div class="alert alert-success" role="alert">
+            Sua senha foi enviada para seu email
+        </div>
+
+        <!-- redireciona para home depois de 6 segundos -->
+
+        <script>setTimeout(() => { location.href = "/home" }, 6000)</script>
+
+        <br />
+    }
+
+    <form class="w-25 mx-auto" asp-controller="User" asp-action="RecuperarSenha" method="post">
+        <div class="mb-3">
+            <label for="inputNickOrEmail" class="form-label">Apelido ou Email</label>
+            <input asp-for="NickOrEmail" type="text" class="form-control" id="inputNickOrEmail">
+            @Html.ValidationMessageFor(x => x.NickOrEmail)
+        </div>
+
+        <a type="button" class="btn btn-outline-secondary" asp-controller="Home" asp-action="Index">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Recuperar</button>
+    </form>
+</div>

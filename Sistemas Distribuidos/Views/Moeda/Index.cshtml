@@ -1,0 +1,178 @@
+﻿@using Sistemas_Distribuidos.Models.Hg
+@model List<MoedaModel>
+@{
+    ViewData["Title"] = "Moeda";
+}
+
+<script type="text/javascript" src="/js/gstatic_charts.js"></script>
+
+<div class="text-center">
+    <label id="teste1" class="mb-3 p-2 fs-4">Cotação Moedas</label>
+
+    <div class="accordion" id="accordion">
+
+        <!-- Se vier um model -->
+        @if (Model != null)
+        {
+
+            <!-- Para cada moeda na lista, cria um item na lista da página -->
+            @foreach (MoedaModel item in Model)
+            {
+                <div class="accordion-item">
+                    <div class="accordion-header" id="heading@(item.Tag)">
+
+                        <div id="@item.Tag" class="divHeadItem accordion-button collapsed p-1" type="button" data-bs-toggle="collapse" data-bs-target="#collapse@(item.Tag)" aria-expanded="false" aria-controls="collapse@(item.Tag)">
+
+                            <div class="col">
+                                <label class="fw-bold fs-5">@item.Name</label>
+                                <p class="text-secondary mb-0" style="font-size: smaller;">Última atualização: @(item.UpdateAt.Hour):@(item.UpdateAt.Minute)</p>
+                            </div>
+
+                            <div class="col text-center">
+                                @if (item.Variation > 0.1)
+                                {
+                                    <label class="text-success fs-5">+@(item.Variation)%</label>
+                                }
+                                else if (item.Variation < -0.1)
+                                {
+                                    <label class="text-danger fs-5">@(item.Variation)%</label>
+                                }
+                                else
+                                {
+                                    <label class="text-secondary fs-5">@(item.Variation)%</label>
+                                }
+                            </div>
+
+                            <div class="col text-end">
+                                <label id="value@(item.Tag)" valor="@item.Buy" class="fw-bold fs-5 mx-2">R$ @(item.Buy.ToString("N2"))</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quando uma moeda for pressionada -->
+
+                    <div id="collapse@(item.Tag)" class="accordion-collapse collapse" aria-labelledby="heading@(item.Tag)" data-bs-parent="#accordion">
+                        <div class="accordion-body">
+
+                            <div class="d-flex justify-content-center">
+                                <div id="divchart@(item.Tag)">
+                                    <div id="spinner@(item.Tag)" class="spinner-border text-danger" role="status"></div>
+                                </div>
+                            </div>
+
+                            <button name="@item.Name" tag="@item.Tag" id="btn@(item.Tag)" type="button" class="btn btn-primary btnAviso" data-bs-toggle="modal" data-bs-target="#exampleModal" style="display: none;">Avise-me quando o preço variar</button>
+                        </div>
+                    </div>
+
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- Modal usado para definir avisos de variação de moedas -->
+
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="titleModal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="titleModal">Criar aviso de variação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="input-group mb-3">
+                        <label class="input-group-text" for="inputGroupSelect01">Quando a cotação</label>
+                        <select class="form-select" id="inputGroupSelect01">
+                            <option selected>escolher...</option>
+                            <option value="1">baixar de</option>
+                            <option value="2">subir de</option>
+                        </select>
+                        <input type="text" class="form-control" aria-label="Valor em reais">
+                        <span class="input-group-text">reais</span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button id="btnSalvarAviso" type="button" class="btn btn-primary">Salvar aviso</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" defer>
+    // Carrega a biblioteca de gráficos
+
+    google.charts.load('current', { 'packages': ['corechart'] });
+
+    var Items = []
+
+    // Click em alguma moeda
+    $(".divHeadItem").click(function (e) {
+        const id = $(this).attr("id")
+
+        if (Items.includes(id)) return;
+
+        // Faz a requisição para o servidor buscando o histórico
+        const url = `/Moeda/Data?moeda=${id}`
+
+        $.get(url, null, (data) => OnReceiveHistory(id, data))
+
+        Items.push(id)
+    })
+
+    // Recebendo o histórico
+    function OnReceiveHistory(id, data) {
+        if (data && data.length == 0) return alert("Houve algum erro :/");
+
+        let arrayData = [["Data", "Cotação"]]
+
+        // Preenche a lista com os dados recebidos
+        for (let item of data) {
+            let date = new Date(item.updateAt)
+
+            arrayData.push([`${date.getDate()}/${date.getMonth()}`, Number(item.buy)])
+        }
+
+        // Adiciona no gráfico também o valor mais recente da moeda, o valor contido no próprio item
+        let curVal = $("#value" + id).attr("valor")
+
+        if (curVal != null && curVal) {
+            curVal = curVal.replace(',', '.')
+            arrayData.push(["atual", Number(curVal)])
+        }
+
+        // Configura o gráfico
+
+        let dados = google.visualization.arrayToDataTable(arrayData);
+
+        let options = {
+            title: 'Histórico - ' + data[0].name,
+            width: 600,
+            height: 300,
+            legend: { position: 'in' }
+        };
+
+        let chart = new google.visualization.LineChart(document.getElementById('divchart' + id));
+
+        // Desenha o gráfico
+        $("#spinner" + id).css("display", "none");
+
+        chart.draw(dados, options);
+
+        $("#btn" + id).css("display", "inline-block");
+    }
+
+    // Clicando no botão de criar aviso (Faz nada por hora)
+    $(".btnAviso").click(function (e) {
+        const btn = $(this);
+
+        const title = $("#titleModal")
+    })
+
+    // Avisa que ainda está em construção
+    $("#btnSalvarAviso").click(() => {
+        return alert("Funcionalidade em construção")
+    })
+</script>

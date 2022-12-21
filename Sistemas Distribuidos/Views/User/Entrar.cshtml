@@ -1,0 +1,54 @@
+﻿@model LoginModel
+@{
+    ViewData["Title"] = "Entrar";
+}
+
+<div class="text-center mt-5">
+    <h3>Entrar</h3>
+
+    <br/>
+
+    <!-- Caso receba algum erro, mostra o erro para o usuário -->
+
+    @if (TempData["error"] != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @TempData["error"]
+        </div>
+        <script>setTimeout(() => { $(".alert").hide() }, 5000)</script>
+
+        <br/>
+    }
+
+    <!-- Caso de certo, mostra a mensagem vinda do servidor -->
+
+    @if (TempData["ok"] != null)
+    {
+        <div class="alert alert-success" role="alert">
+            @TempData["ok"]
+        </div>
+        <script>setTimeout(() => { location.href = "/home" }, 3000)</script>
+
+        <br />
+    }
+
+    <form class="w-25 mx-auto" asp-controller="User" asp-action="Entrar" method="post">
+        <div class="mb-3">
+            <label for="inputNickOrEmail" class="form-label">Apelido ou Email</label>
+            <input asp-for="NickOrEmail" type="text" class="form-control" id="inputNickOrEmail">
+            @Html.ValidationMessageFor(x => x.NickOrEmail)
+        </div>
+        <div class="mb-3">
+            <label for="inputPassword" class="form-label">Senha</label>
+            <input asp-for="Password" type="password" class="form-control" id="inputPassword">
+            @Html.ValidationMessageFor(x => x.Password)
+        </div>
+
+        <a type="button" class="btn btn-outline-secondary" asp-controller="Home" asp-action="Index">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Entrar</button>
+    </form>
+
+    <br/>
+
+    <a asp-controller="User" asp-action="RecuperarSenha">Esqueci minha senha</a>
+</div>

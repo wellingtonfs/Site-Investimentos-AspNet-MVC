@@ -1,0 +1,58 @@
+﻿@model RecSenhaModel
+@{
+    ViewData["Title"] = "Validar Email";
+}
+
+<div class="text-center mt-5">
+    <h3>Confirmação de Email</h3>
+
+    <br/>
+
+    @if (TempData["waiting"] != null)
+    {
+        <div class="alert alert-success" role="alert">
+            @TempData["waiting"]
+        </div>
+    }
+
+    <!-- Caso de certo, mostra a mensagem vinda do servidor -->
+
+    @if (TempData["ok"] != null)
+    {
+        <div class="alert alert-success" role="alert">
+            @TempData["ok"]
+        </div>
+
+        <br />
+
+        <a type="button" class="btn btn-success" asp-controller="User" asp-action="Entrar">Entrar</a>
+    }
+
+    <!-- Caso receba algum erro, mostra o erro para o usuário -->
+
+    @if (TempData["invalidKey"] != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @TempData["invalidKey"]
+        </div>
+
+        <br />
+
+        <a type="button" class="btn btn-outline-secondary" asp-controller="Home" asp-action="Index">Voltar</a>
+    }
+
+    <!-- Caso receba algum erro, mostra o erro para o usuário -->
+
+    @if (TempData["no_validation"] != null)
+    {
+        <div class="alert alert-warning" role="alert">
+            @TempData["no_validation"]
+        </div>
+
+        <br />
+
+        <a type="button" class="btn btn-primary" asp-route-id="@TempData["id"]" asp-controller="User" asp-action="ReenviarEmail">Enviar email de confirmação novamente</a>
+        <br />
+        <a type="button" class="btn btn-outline-secondary" asp-controller="Home" asp-action="Index">Voltar</a>
+    }
+</div>

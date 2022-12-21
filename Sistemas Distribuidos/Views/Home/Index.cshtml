@@ -1,0 +1,184 @@
+﻿@using Sistemas_Distribuidos.Services
+
+@{
+    ViewData["Title"] = "Inicio";
+}
+
+<div class="text-center">
+
+    <!-- Formulário de pesquisa -->
+
+    <form id="formAcao" class="text-center">
+        <label for="inputSearch" class="form-label">Pesquisar por empresas</label>
+        <br />
+        <div class="d-flex w-75 mx-auto">
+            <input type="text" class="form-control" id="inputSearch" placeholder="Buscar por empresas pra saber valor das ações e notícias">
+            <button id="btnForm" type="submit" class="btn btn-primary ml-1">Buscar</button>
+        </div>
+    </form>
+
+    <label id="lbExemplo" class="mt-3">Exemplo de pesquisa</label>
+    <br/>
+
+    <div id="spinner" class="spinner-border text-info mt-3" role="status" style="display: none"></div>
+
+    <label id="lbNaoEncontrado" class="mt-3" style="display: none">Nenhum resultado encontrado</label>
+
+    <ul id="ulResult" class="list-group mt-3"></ul>
+
+    <label id="lbNews" class="mt-3" style="display: none">Notícias</label>
+    <label id="lbNoNews" class="mt-3" style="display: none">Sem notícias</label>
+
+    <ul id="ulNews" class="list-group mt-3"></ul>
+</div>
+
+<script defer>
+    let firstTime = true;
+
+    // Quando a página terminar de carregar
+    $(document).ready(
+        function () {
+            let exEmpresas = []
+
+            // Preenche a lista de empresas exemplo de acordo com a lista do servidor
+            @foreach(string nameEmp in YahooAPI.ExemploEmpresas)
+            {
+                <text>
+
+                    exEmpresas.push("@nameEmp");
+
+                </text>
+            }
+
+            // Obtém uma empresa aleatória sempre que a página carregar
+            let item = exEmpresas[Math.floor(Math.random() * exEmpresas.length)]
+
+            // Define a empresa escolhida no input
+            $("#inputSearch").val(item)
+
+            // Simula um click no botão de pesquisar
+            $("#btnForm").trigger('click');
+        }
+    )
+
+    // Quando o formulário for submetido
+    $("#formAcao").submit(function (e) {
+        e.preventDefault()
+
+        let value = $("#inputSearch").val()
+
+        if (!value) return alert("Campo de busca vazio")
+
+        // Limpar tela
+
+        if (firstTime) firstTime = false;
+        else $("#lbExemplo").hide()
+
+        const uR = $("#ulResult")
+        uR.hide()
+        uR.empty()
+
+        const uN = $("#ulNews")
+        uN.hide()
+        uN.empty()
+
+        $("#lbNaoEncontrado").hide()
+        $("#lbNoNews").hide()
+        $("#lbNews").hide()
+
+        $(".btnAcao").off('click')
+
+        // Rodar spinner
+
+        $("#spinner").show()
+
+        // Realizar requisição para o lado servidor
+
+        $.get(`/Home/Pesquisar?query=${value}`, null, function (data) {
+            $("#spinner").hide()
+
+            // Verificação de erros
+
+            if (!data || data == null) return alert("erro");
+            if (data.quotes.length == 0) return $("#lbNaoEncontrado").show();
+            if (!data.quotes[0].longname || !data.quotes[0].symbol) return $("#lbNaoEncontrado").show();
+
+            // Deu certo
+
+            result = data.quotes[0]
+            news = data.news
+
+            // Criar elementos html de resposta
+
+            const nLi = $("<li />", { class: "list-group-item" })
+
+            const nLb = $("<label />", { class: "fs-4 p-2" })
+            nLb.text(result.longname)
+
+            const nBtn = $("<button />", { type: "button", class: "btn btn-success btnAcao", alt: result.symbol })
+            nBtn.text("Valor das Ações")
+            nBtn.click(() => OnClickBtnValor(result.symbol))
+
+            const nBr = $("<br />")
+
+            nLi.append(nLb)
+            nLi.append(nBr)
+            nLi.append(nBtn)
+
+            uR.append(nLi)
+
+            // Criar lista de notícias
+
+            for (item of news) {
+                if (!item.title) continue;
+
+                let newsLi = $("<li />", { class: "list-group-item" })
+                newsLi.text(item.title)
+
+                uN.append(newsLi)
+            }
+
+            // Mostrar resultados
+
+            uR.show()
+
+            if (news.length > 0) {
+                $("#lbNews").show()
+                uN.show()
+            } else {
+                $("#lbNoNews").show()
+            }
+
+        })
+    })
+
+    // Quando o botão de mostrar as ações da empresa for pressionado:
+    function OnClickBtnValor(tag) {
+        // Cria o spinner de carregamento e add no botão
+        const divWaiting = $("<div />", { class: "spinner-border text-danger", role: "status" })
+
+        const btn = $(".btnAcao")
+        btn.off('click')
+        btn.text('')
+        btn.append(divWaiting)
+
+        // Faz a requisição para o servidor
+        $.get(`/Home/ObterAcao?tag=${tag}`, null, function (data) {
+            // Se der erro
+
+            if (!data || data == null) {
+                btn.empty()
+                btn.text('Ocorreu algum erro ao buscar dados')
+                return;
+            }
+
+            // Caso não seja brasileiro (real), troca a virgula por ponto
+
+            if (data[0] != 'BRL') {
+                data[1] = data[1].replace(',', '.')
+            }
+
+            btn.text(`${data[0]} ${data[1]}`)
+        })
+    }
+</script>

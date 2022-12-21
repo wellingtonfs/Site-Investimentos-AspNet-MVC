@@ -1,0 +1,58 @@
+﻿@model UserModel
+@{
+    ViewData["Title"] = "Cadastro";
+}
+
+<div class="text-center mt-5">
+    <h3>Criar Conta</h3>
+
+    <br />
+
+    <!-- Caso receba algum erro, mostra o erro para o usuário -->
+
+    @if (TempData["error"] != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @TempData["error"]
+        </div>
+
+        <br/>
+    }
+
+    <!-- Caso de certo, mostra a mensagem vinda do servidor -->
+
+    @if (TempData["ok"] != null)
+    {
+        <div class="alert alert-success" role="alert">
+            @TempData["ok"]
+        </div>
+
+        <br />
+    }
+
+    <form class="w-25 mx-auto" asp-controller="User" asp-action="Cadastro" method="post">
+        <div class="mb-3">
+            <label for="inputNick" class="form-label">Apelido</label>
+            <input asp-for="Nick" type="text" class="form-control" id="inputNick">
+            @Html.ValidationMessageFor(x => x.Nick)
+        </div>
+        <div class="mb-3">
+            <label for="inputEmail" class="form-label">Email</label>
+            <input asp-for="Email" type="email" class="form-control" id="inputEmail" aria-describedby="emailHelp">
+            @Html.ValidationMessageFor(x => x.Email)
+            <div id="emailHelp" class="form-text">Nós nunca compartilharemos seu email com ninguém.</div>
+        </div>
+        <div class="mb-3">
+            <label for="inputPassword" class="form-label">Senha</label>
+            <input asp-for="Password" type="password" class="form-control" id="inputPassword">
+            @Html.ValidationMessageFor(x => x.Password)
+        </div>
+
+        <a type="button" class="btn btn-outline-secondary" asp-controller="Home" asp-action="Index">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Cadastrar</button>
+    </form>
+
+    <div class="alert alert-warning mt-3" role="alert">
+        No momento criar conta é inútil, pois o site ainda está em construção
+    </div>
+</div>

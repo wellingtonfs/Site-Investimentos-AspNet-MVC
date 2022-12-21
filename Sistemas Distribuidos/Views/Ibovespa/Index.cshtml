@@ -1,0 +1,162 @@
+﻿@{
+    ViewData["Title"] = "Ibovespa";
+}
+
+<script type="text/javascript" src="/js/gstatic_charts.js"></script>
+
+<div class="text-center">
+    <h4 class="m-5">Ibovespa</h4>
+
+    <div>
+        <div class="d-flex justify-content-center w-100">
+            <div class="btn-group-vertical" role="group">
+                <button type="button" class="btn btn-secondary" disabled>Histórico</button>
+                <button name="1d" type="button" class="btn btn-secondary btnControlRange">1 Dia</button>
+                <button name="5d" type="button" class="btn btn-secondary btnControlRange">5 Dias</button>
+                <button name="1mo" type="button" class="btn btn-secondary btnControlRange">1 Mês</button>
+                <button name="max" type="button" class="btn btn-secondary btnControlRange">Máximo</button>
+            </div>
+
+            <div class="divGrafico">
+                <div id="spinnerIbovespa" class="spinner-border text-info" role="status"></div>
+                <div id="divchartIbovespa"></div>
+            </div>
+
+            <div class="btn-group-vertical" role="group">
+                <button type="button" class="btn btn-secondary" disabled>Intervalo</button>
+                <button name="30m" type="button" class="btn btn-secondary btnControlIntervalo">30 Minutos</button>
+                <button name="1h" type="button" class="btn btn-secondary btnControlIntervalo">1 Hora</button>
+                <button name="1d" type="button" class="btn btn-secondary btnControlIntervalo">1 Dia</button>
+                <button name="5d" type="button" class="btn btn-secondary btnControlIntervalo">5 Dias</button>
+            </div>
+        </div>
+
+        <div class="w-100">
+            <label>Histórico: </label>
+            <label id="lbRange">2 Dias</label>
+            <br />
+            <label>Intervalo: </label>
+            <label id="lbIntervalo">30 Minutos</label>
+        </div>
+    </div>
+</div>
+
+<style>
+    .divGrafico {
+        display: flex;
+        flex-direction: column;
+        width: 600px;
+        height: 300px;
+        align-items: center;
+        justify-content: center;
+        padding-left: 50px;
+    }
+</style>
+
+<script defer>
+    // Define o estado padrão das variáveis
+
+    const state = {
+        intervalo: "30m",
+        range: "2d",
+        strIntervalo: "30 Minutos",
+        strRange: "2 Dias",
+    }
+
+    google.charts.load('current', { 'packages': ['corechart'] });
+
+    // Quando a página carregar, busca os dados para preencher os gráficos
+    window.onload = function () {
+        makeRequest()
+    }
+
+    // Faz a requisição para o servidor
+    function makeRequest() {
+        const url = `/Ibovespa/Data?tipo=ibovespa&intervalo=${state.intervalo}&range=${state.range}`
+
+        // Cria o spinner de carregamento
+        $("#divchartIbovespa").empty()
+        $("#spinnerIbovespa").show();
+
+        $.get(url, null, OnReceiveHistory)
+    }
+
+    // Recebendo o histórico do servidor
+    function OnReceiveHistory(data) {
+        if (!data) return alert("Ocorreu algum erro");
+
+        let arrayData;
+
+        try {
+            const rawdata = data.chart.result[0].indicators.quote[0].close
+            const timestamp = data.chart.result[0].timestamp
+
+            arrayData = [["Hora", "Valor"]]
+
+            // Preenche a lista arrayData com as informações recebidas
+            for (let i in rawdata) {
+                if (rawdata[i] == null) continue;
+
+                let date = new Date(Number(timestamp[i]) * 1000)
+
+                let month = date.getMonth() + 1
+
+                let strDate = date.getDate() < 10 ? '0' + date.getDate().toString() : date.getDate().toString()
+                strDate += '/' + (month < 10 ? '0' + month.toString() : month.toString())
+                strDate += ' ' + (date.getHours() < 10 ? '0' + date.getHours().toString() : date.getHours().toString())
+                strDate += ':' + (date.getMinutes() < 10 ? '0' + date.getMinutes().toString() : date.getMinutes().toString())
+
+                // Adiciona mais um item que aparecerá no gráfico
+                arrayData.push([strDate, Number(rawdata[i])])
+            }
+        } catch (e) {
+            //problemas no paraíso
+            return;
+        }
+
+        // Define as propriedades do gráfico
+        let dados = google.visualization.arrayToDataTable(arrayData);
+
+        let options = {
+            title: 'Histórico - Ibovespa',
+            width: 600,
+            height: 300,
+            legend: { position: 'in' }
+        };
+
+        let chart = new google.visualization.LineChart(document.getElementById('divchartIbovespa'));
+
+        // Desligar carregamento e desenhar o gráfico
+        $("#spinnerIbovespa").hide();
+
+        chart.draw(dados, options);
+
+        $("#lbRange").text(state.strRange)
+        $("#lbIntervalo").text(state.strIntervalo)
+    }
+
+    // Caso algum botão de range seja pressionado
+    $(".btnControlRange").click(function () {
+        // O nome do botão é usado como range para realizar a requisição
+        let name = $(this).attr("name")
+
+        if (!name) return;
+
+        state.range = name
+        state.strRange = $(this).text()
+        makeRequest() //requisição
+    })
+
+    // Caso algum botão de intervalo seja pressionado
+    $(".btnControlIntervalo").click(function () {
+        // O nome do botão é usado como intervalo para realizar a requisição
+        let name = $(this).attr("name")
+
+        if (!name) return;
+
+        state.intervalo = name
+        state.strIntervalo = $(this).text()
+        makeRequest() //requisição
+    })
+
+</script>
